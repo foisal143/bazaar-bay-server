@@ -1,7 +1,7 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 const cors = require('cors');
 require('dotenv').config();
 // middlware
@@ -23,6 +23,23 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    const produtctCollection = client.db('bazaar-bay').collection('products');
+
+    // get the all products
+    app.get('/products', async (req, res) => {
+      const result = await produtctCollection.find().toArray();
+      res.send(result);
+    });
+
+    // get the single product
+    app.get('/products/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await produtctCollection.findOne(query);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 });
     console.log(
@@ -36,7 +53,7 @@ async function run() {
 run().catch(console.dir);
 
 app.get('/', (req, res) => {
-  console.log('bazaar bay data is comming');
+  res.send('bazaar bay data is comming');
 });
 
 app.listen(port, () => {
