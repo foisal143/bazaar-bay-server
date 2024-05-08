@@ -127,6 +127,26 @@ async function run() {
       res.send(result);
     });
 
+    app.patch('/cart-products/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const { quantity } = req.body;
+        const updatedDoc = {
+          $set: {
+            quantity: quantity,
+          },
+        };
+        const result = await addedProductsCollection.updateOne(
+          query,
+          updatedDoc
+        );
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db('admin').command({ ping: 1 });
     console.log(
