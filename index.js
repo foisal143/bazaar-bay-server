@@ -25,7 +25,9 @@ async function run() {
     await client.connect();
 
     const produtctCollection = client.db('bazaar-bay').collection('products');
-
+    const wishlistProductCollection = client
+      .db('bazaar-bay')
+      .collection('wishlist');
     // get the all products
     app.get('/products', async (req, res) => {
       const result = await produtctCollection.find().toArray();
@@ -38,6 +40,26 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await produtctCollection.findOne(query);
       res.send(result);
+    });
+
+    // api for  post the wishlist products
+
+    app.post('/wishlists', async (req, res) => {
+      const product = req.body;
+      console.log(product);
+      const result = await wishlistProductCollection.insertOne(product);
+      res.send(result);
+    });
+
+    app.get('/wishlists/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { email: email };
+        const result = await wishlistProductCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        res.send('no data found');
+      }
     });
 
     // Send a ping to confirm a successful connection
