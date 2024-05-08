@@ -24,10 +24,16 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
+    // all collection here for my application
+
     const produtctCollection = client.db('bazaar-bay').collection('products');
     const wishlistProductCollection = client
       .db('bazaar-bay')
       .collection('wishlist');
+    const addedProductsCollection = client
+      .db('bazaar-bay')
+      .collection('addedCartProducts');
+
     // get the all products
     app.get('/products', async (req, res) => {
       const result = await produtctCollection.find().toArray();
@@ -82,6 +88,20 @@ async function run() {
       } catch (error) {
         res.send('no data found');
       }
+    });
+
+    // api for add to the product in cart
+    app.post('/cart-products', async (req, res) => {
+      const product = req.body;
+      const result = await addedProductsCollection.insertOne(product);
+      res.send(result);
+    });
+
+    app.get('/cart-products/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await addedProductsCollection.find(query).toArray();
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
