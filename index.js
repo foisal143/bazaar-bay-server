@@ -42,11 +42,33 @@ async function run() {
       res.send(result);
     });
 
+    // api for update the isWishlist in my product
+    app.patch('/product/wishlist/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const { isWishlist } = req.body;
+        const option = { upsert: true };
+        const updatedDoc = {
+          $set: {
+            isWishlist,
+          },
+        };
+
+        const result = await produtctCollection.updateOne(
+          filter,
+          updatedDoc,
+          option
+        );
+        res.send(result);
+      } catch (error) {
+        res.send('update unsuccessfull');
+      }
+    });
     // api for  post the wishlist products
 
     app.post('/wishlists', async (req, res) => {
       const product = req.body;
-      console.log(product);
       const result = await wishlistProductCollection.insertOne(product);
       res.send(result);
     });
