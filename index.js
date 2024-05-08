@@ -90,11 +90,34 @@ async function run() {
       }
     });
 
+    app.delete('/products/wishlists/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: id };
+      const result = await wishlistProductCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // api for add to the product in cart
     app.post('/cart-products', async (req, res) => {
       const product = req.body;
-      const result = await addedProductsCollection.insertOne(product);
-      res.send(result);
+      const filter = { name: product.name };
+      const exist = await addedProductsCollection.findOne(filter);
+      const quantity = exist?.quantity;
+      if (exist) {
+        const updatedDoc = {
+          $set: {
+            quantity: quantity + 1,
+          },
+        };
+        const result = await addedProductsCollection.updateOne(
+          filter,
+          updatedDoc
+        );
+        res.send(result);
+      } else {
+        const result = await addedProductsCollection.insertOne(product);
+        res.send(result);
+      }
     });
 
     app.get('/cart-products/:email', async (req, res) => {
