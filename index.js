@@ -127,6 +127,7 @@ async function run() {
       res.send(result);
     });
 
+    // update the quantity of added product
     app.patch('/cart-products/:id', async (req, res) => {
       try {
         const id = req.params.id;
@@ -145,6 +146,14 @@ async function run() {
       } catch (error) {
         console.log(error.message);
       }
+    });
+
+    // delete the cart product
+    app.delete('/cart-products/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await addedProductsCollection.deleteOne(query);
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
