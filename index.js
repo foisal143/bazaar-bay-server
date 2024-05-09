@@ -1,5 +1,5 @@
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 3000;
 const cors = require('cors');
@@ -27,6 +27,8 @@ async function run() {
     // all collection here for my application
 
     const produtctCollection = client.db('bazaar-bay').collection('products');
+    produtctCollection.createIndex({ name: 1 });
+    produtctCollection.createIndex({ category: 1 });
     const wishlistProductCollection = client
       .db('bazaar-bay')
       .collection('wishlist');
@@ -37,8 +39,13 @@ async function run() {
     // search the all products api
     app.get('/search-products/:searchValue', async (req, res) => {
       const searchValue = req.params.searchValue;
+      const regexSearch = new RegExp(searchValue);
+      console.log(regexSearch);
       const query = {
-        name: { $regex: searchValue },
+        $or: [
+          { name: { $regex: regexSearch } },
+          { category: { $regex: regexSearch } },
+        ],
       };
       const result = await produtctCollection.find(query).toArray();
       res.send(result);
@@ -164,6 +171,23 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await addedProductsCollection.deleteOne(query);
       res.send(result);
+    });
+
+    // delete many products form cart
+    app.delete('/select-carts', async (req, res) => {
+      try {
+        const ids = req.body;
+
+        if (ids?.length > 0) {
+          const filter = { _id: { $in: ids.map(id => new ObjectId(id)) } };
+          console.log(ids);
+          const result = await addedProductsCollection.deleteMany(filter);
+          console.log(result);
+          res.send(result);
+        }
+      } catch (error) {
+        res.send('faild to fetch');
+      }
     });
 
     // Send a ping to confirm a successful connection
