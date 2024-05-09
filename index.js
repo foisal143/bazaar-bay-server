@@ -27,14 +27,37 @@ async function run() {
     // all collection here for my application
 
     const produtctCollection = client.db('bazaar-bay').collection('products');
+    // create index for product collection
     produtctCollection.createIndex({ name: 1 });
     produtctCollection.createIndex({ category: 1 });
+
     const wishlistProductCollection = client
       .db('bazaar-bay')
       .collection('wishlist');
     const addedProductsCollection = client
       .db('bazaar-bay')
       .collection('addedCartProducts');
+
+    const userCollection = client.db('bazaar-bay').collection('users');
+
+    // all user related api here
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    app.get('/users/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.get('/users', async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
 
     // search the all products api
     app.get('/search-products/:searchValue', async (req, res) => {
