@@ -34,6 +34,16 @@ async function run() {
       .db('bazaar-bay')
       .collection('addedCartProducts');
 
+    // search the all products api
+    app.get('/search-products/:searchValue', async (req, res) => {
+      const searchValue = req.params.searchValue;
+      const query = {
+        name: { $regex: searchValue },
+      };
+      const result = await produtctCollection.find(query).toArray();
+      res.send(result);
+    });
+
     // get the all products
     app.get('/products', async (req, res) => {
       const result = await produtctCollection.find().toArray();
