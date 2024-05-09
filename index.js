@@ -41,9 +41,17 @@ async function run() {
     const userCollection = client.db('bazaar-bay').collection('users');
 
     // all user related api here
-    app.post('/users', async (req, res) => {
+    app.put('/users/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
       const user = req.body;
-      const result = await userCollection.insertOne(user);
+      const updatedDoc = {
+        $set: {
+          ...user,
+        },
+      };
+      const option = { upsert: true };
+      const result = await userCollection.updateOne(query, updatedDoc, option);
       res.send(result);
     });
 
