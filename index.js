@@ -2,11 +2,38 @@ const express = require('express');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 3000;
+const jwt = require('jsonwebtoken');
 const cors = require('cors');
 require('dotenv').config();
 // middlware
 app.use(cors());
 app.use(express.json());
+
+// verify the jwt
+const verifyJwt = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(403).send({ error: true, message: 'unauthrized access' });
+  }
+  const token = authorization.split(' ')[1];
+  jwt.verify(token, process.env.JWT_TOKEN, (error, decode) => {
+    if (error) {
+      return res
+        .status(403)
+        .send({ error: true, message: 'unauthrized access' });
+    }
+    req.decode = decode;
+  });
+  next();
+};
+
+// jwt api
+
+app.post('/jwt', (req, res) => {
+  const emailObj = req.body;
+  const token = jwt.sign(emailObj, process.env.JWT_TOKEN, { expiresIn: '1h' });
+  res.send({ token });
+});
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.mrvtr8q.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -55,19 +82,19 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/users/:email', async (req, res) => {
+    app.get('/users/:email', verifyJwt, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const result = await userCollection.findOne(query);
       res.send(result);
     });
 
-    app.get('/users', async (req, res) => {
+    app.get('/users', verifyJwt, async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
 
-    app.patch('/user-personal-profile/:id', async (req, res) => {
+    app.patch('/user-personal-profile/:id', verifyJwt, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const userInfo = req.body;
@@ -81,7 +108,7 @@ async function run() {
       res.send(result);
     });
 
-    app.patch('/user-address-profile/:id', async (req, res) => {
+    app.patch('/user-address-profile/:id', verifyJwt, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const userInfo = req.body;
@@ -125,7 +152,7 @@ async function run() {
     });
 
     // api for update the isWishlist in my product
-    app.patch('/product/wishlist/:id', async (req, res) => {
+    app.patch('/product/wishlist/:id', verifyJwt, async (req, res) => {
       try {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
@@ -149,13 +176,13 @@ async function run() {
     });
     // api for  post the wishlist products
 
-    app.post('/wishlists', async (req, res) => {
+    app.post('/wishlists', verifyJwt, async (req, res) => {
       const product = req.body;
       const result = await wishlistProductCollection.insertOne(product);
       res.send(result);
     });
 
-    app.get('/wishlists/:email', async (req, res) => {
+    app.get('/wishlists/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
         const query = { email: email };
@@ -166,7 +193,7 @@ async function run() {
       }
     });
 
-    app.delete('/products/wishlists/:id', async (req, res) => {
+    app.delete('/products/wishlists/:id', verifyJwt, async (req, res) => {
       const id = req.params.id;
       const query = { _id: id };
       const result = await wishlistProductCollection.deleteOne(query);
@@ -174,8 +201,9 @@ async function run() {
     });
 
     // api for add to the product in cart
-    app.post('/cart-products', async (req, res) => {
+    app.post('/cart-products', verifyJwt, async (req, res) => {
       const product = req.body;
+
       const filter = { name: product.name };
       const exist = await addedProductsCollection.findOne(filter);
       const quantity = exist?.quantity;
@@ -196,7 +224,7 @@ async function run() {
       }
     });
 
-    app.get('/cart-products/:email', async (req, res) => {
+    app.get('/cart-products/:email', verifyJwt, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const result = await addedProductsCollection.find(query).toArray();
@@ -204,10 +232,10 @@ async function run() {
     });
 
     // update the quantity of added product
-    app.patch('/cart-products/:id', async (req, res) => {
+    app.patch('/cart-products/:id', verifyJwt, async (req, res) => {
       try {
         const id = req.params.id;
-        const query = { _id: new ObjectId(id) };
+        const query = { _id: id };
         const { quantity } = req.body;
         const updatedDoc = {
           $set: {
@@ -225,20 +253,21 @@ async function run() {
     });
 
     // delete the cart product
-    app.delete('/cart-products/:id', async (req, res) => {
+    app.delete('/cart-products/:id', verifyJwt, async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
+      const query = { _id: id };
       const result = await addedProductsCollection.deleteOne(query);
       res.send(result);
     });
 
     // delete many products form cart
-    app.delete('/select-carts', async (req, res) => {
+    app.delete('/select-carts', verifyJwt, async (req, res) => {
       try {
-        const ids = req.body;
-
+        const idsString = req.query.ids;
+        const ids = idsString.split(',');
+        console.log(ids);
         if (ids?.length > 0) {
-          const filter = { _id: { $in: ids.map(id => new ObjectId(id)) } };
+          const filter = { _id: { $in: ids.map(id => id) } };
           console.log(ids);
           const result = await addedProductsCollection.deleteMany(filter);
           console.log(result);
