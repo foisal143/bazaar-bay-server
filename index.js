@@ -69,24 +69,30 @@ async function run() {
 
     const userCollection = client.db('bazaar-bay').collection('users');
 
+    // selected products collection
+    const selectedProductCollection = client
+      .db('bazaar-bay')
+      .collection('selectedProd');
     // all user related api here
     app.put('/users/:email', async (req, res) => {
       try {
         const email = req.params.email;
-        const query = { email: email };
-        const user = req.body;
-        const updatedDoc = {
-          $set: {
-            ...user,
-          },
-        };
-        const option = { upsert: true };
-        const result = await userCollection.updateOne(
-          query,
-          updatedDoc,
-          option
-        );
-        res.send(result);
+        if (email) {
+          const query = { email: email };
+          const user = req.body;
+          const updatedDoc = {
+            $set: {
+              ...user,
+            },
+          };
+          const option = { upsert: true };
+          const result = await userCollection.updateOne(
+            query,
+            updatedDoc,
+            option
+          );
+          res.send(result);
+        }
       } catch (error) {
         res.send('failed to fetch');
       }
@@ -95,9 +101,13 @@ async function run() {
     app.get('/users/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
-        const query = { email: email };
-        const result = await userCollection.findOne(query);
-        res.send(result);
+        if (email) {
+          const query = { email: email };
+          const result = await userCollection.findOne(query);
+          res.send(result);
+        } else {
+          res.send({});
+        }
       } catch (error) {
         res.send(error.message);
       }
@@ -180,8 +190,8 @@ async function run() {
     // get the single product
     app.get('/products/:id', async (req, res) => {
       try {
+        const id = req.params.id;
         if (id) {
-          const id = req.params.id;
           const query = { _id: new ObjectId(id) };
           const result = await produtctCollection.findOne(query);
           res.send(result);
@@ -333,6 +343,57 @@ async function run() {
         }
       } catch (error) {
         res.send('faild to fetch');
+      }
+    });
+
+    // selected products apis
+
+    app.post('/selected-products', async (req, res) => {
+      try {
+        const products = req.body;
+        const getDataQuery = { _id: { $in: products.map(prod => prod._id) } };
+        const productsFormDb = await selectedProductCollection
+          .find(getDataQuery)
+          .toArray();
+
+        const exist = products.length === productsFormDb.length;
+        if (exist) {
+          return res.send({ exist: true });
+        } else {
+          const result = await selectedProductCollection.insertMany(products);
+          res.send(result);
+        }
+      } catch (error) {
+        res.send('faild to load data');
+      }
+    });
+
+    app.get('/selected-products/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        if (email) {
+          const query = { email: email };
+          const result = await selectedProductCollection.find(query).toArray();
+          res.send(result);
+        }
+      } catch (error) {
+        res.send('faild to load data');
+      }
+    });
+
+    // delete the selected data
+
+    app.delete('/selected-products/:id', async (req, res) => {
+      try {
+        const idsString = req.params.id;
+        const ids = idsString.split(',');
+        if (ids) {
+          const query = { _id: { $in: ids.map(id => id) } };
+          const result = await selectedProductCollection.deleteMany(query);
+          res.send(result);
+        }
+      } catch (error) {
+        res.send('failsd to fetch');
       }
     });
 
