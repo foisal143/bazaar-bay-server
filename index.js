@@ -5,6 +5,8 @@ const port = process.env.PORT || 3000;
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 require('dotenv').config();
+const stripe = require('stripe')(`${process.env.STIRPE_SK_KEY}`);
+
 // middlware
 app.use(cors());
 app.use(express.json());
@@ -178,10 +180,14 @@ async function run() {
     // get the single product
     app.get('/products/:id', async (req, res) => {
       try {
-        const id = req.params.id;
-        const query = { _id: new ObjectId(id) };
-        const result = await produtctCollection.findOne(query);
-        res.send(result);
+        if (id) {
+          const id = req.params.id;
+          const query = { _id: new ObjectId(id) };
+          const result = await produtctCollection.findOne(query);
+          res.send(result);
+        } else {
+          res.send({});
+        }
       } catch (error) {
         res.send(error.message);
       }
@@ -327,6 +333,28 @@ async function run() {
         }
       } catch (error) {
         res.send('faild to fetch');
+      }
+    });
+
+    // create payment intent for stripe payment
+    app.post('/payment-intent', async (req, res) => {
+      try {
+        const { price } = req.body;
+
+        if (price) {
+          const amount = parseFloat(price) * 100;
+          const paymentIntent = await stripe.paymentIntents.create({
+            amount: amount,
+            currency: 'usd',
+            payment_method_types: ['card'],
+          });
+          console.log(paymentIntent.client_secret);
+          res.send({
+            clientSecret: paymentIntent.client_secret,
+          });
+        }
+      } catch (error) {
+        res.send('payment faild', error.message);
       }
     });
 
