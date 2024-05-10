@@ -69,86 +69,122 @@ async function run() {
 
     // all user related api here
     app.put('/users/:email', async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const user = req.body;
-      const updatedDoc = {
-        $set: {
-          ...user,
-        },
-      };
-      const option = { upsert: true };
-      const result = await userCollection.updateOne(query, updatedDoc, option);
-      res.send(result);
+      try {
+        const email = req.params.email;
+        const query = { email: email };
+        const user = req.body;
+        const updatedDoc = {
+          $set: {
+            ...user,
+          },
+        };
+        const option = { upsert: true };
+        const result = await userCollection.updateOne(
+          query,
+          updatedDoc,
+          option
+        );
+        res.send(result);
+      } catch (error) {
+        res.send('failed to fetch');
+      }
     });
 
     app.get('/users/:email', verifyJwt, async (req, res) => {
-      const email = req.params.email;
-      const query = { email: email };
-      const result = await userCollection.findOne(query);
-      res.send(result);
+      try {
+        const email = req.params.email;
+        const query = { email: email };
+        const result = await userCollection.findOne(query);
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     app.get('/users', verifyJwt, async (req, res) => {
-      const result = await userCollection.find().toArray();
-      res.send(result);
+      try {
+        const result = await userCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     app.patch('/user-personal-profile/:id', verifyJwt, async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const userInfo = req.body;
-      const updatedDoc = {
-        $set: {
-          ...userInfo,
-        },
-      };
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const userInfo = req.body;
+        const updatedDoc = {
+          $set: {
+            ...userInfo,
+          },
+        };
 
-      const result = await userCollection.updateOne(filter, updatedDoc);
-      res.send(result);
+        const result = await userCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     app.patch('/user-address-profile/:id', verifyJwt, async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      const userInfo = req.body;
-      const updatedDoc = {
-        $set: {
-          ...userInfo,
-        },
-      };
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const userInfo = req.body;
+        const updatedDoc = {
+          $set: {
+            ...userInfo,
+          },
+        };
 
-      const result = await userCollection.updateOne(filter, updatedDoc);
-      res.send(result);
+        const result = await userCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     // search the all products api
     app.get('/search-products/:searchValue', async (req, res) => {
-      const searchValue = req.params.searchValue;
-      const regexSearch = new RegExp(searchValue);
-      console.log(regexSearch);
-      const query = {
-        $or: [
-          { name: { $regex: regexSearch } },
-          { category: { $regex: regexSearch } },
-        ],
-      };
-      const result = await produtctCollection.find(query).toArray();
-      res.send(result);
+      try {
+        const searchValue = req.params.searchValue;
+        const regexSearch = new RegExp(searchValue);
+        console.log(regexSearch);
+        const query = {
+          $or: [
+            { name: { $regex: regexSearch } },
+            { category: { $regex: regexSearch } },
+          ],
+        };
+        const result = await produtctCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     // get the all products
     app.get('/products', async (req, res) => {
-      const result = await produtctCollection.find().toArray();
-      res.send(result);
+      try {
+        const result = await produtctCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     // get the single product
     app.get('/products/:id', async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const result = await produtctCollection.findOne(query);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const result = await produtctCollection.findOne(query);
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     // api for update the isWishlist in my product
@@ -177,9 +213,13 @@ async function run() {
     // api for  post the wishlist products
 
     app.post('/wishlists', verifyJwt, async (req, res) => {
-      const product = req.body;
-      const result = await wishlistProductCollection.insertOne(product);
-      res.send(result);
+      try {
+        const product = req.body;
+        const result = await wishlistProductCollection.insertOne(product);
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     app.get('/wishlists/:email', verifyJwt, async (req, res) => {
@@ -194,33 +234,41 @@ async function run() {
     });
 
     app.delete('/products/wishlists/:id', verifyJwt, async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: id };
-      const result = await wishlistProductCollection.deleteOne(query);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const query = { _id: id };
+        const result = await wishlistProductCollection.deleteOne(query);
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     // api for add to the product in cart
     app.post('/cart-products', verifyJwt, async (req, res) => {
-      const product = req.body;
+      try {
+        const product = req.body;
 
-      const filter = { name: product.name };
-      const exist = await addedProductsCollection.findOne(filter);
-      const quantity = exist?.quantity;
-      if (exist) {
-        const updatedDoc = {
-          $set: {
-            quantity: quantity + 1,
-          },
-        };
-        const result = await addedProductsCollection.updateOne(
-          filter,
-          updatedDoc
-        );
-        res.send(result);
-      } else {
-        const result = await addedProductsCollection.insertOne(product);
-        res.send(result);
+        const filter = { name: product.name };
+        const exist = await addedProductsCollection.findOne(filter);
+        const quantity = exist?.quantity;
+        if (exist) {
+          const updatedDoc = {
+            $set: {
+              quantity: quantity + 1,
+            },
+          };
+          const result = await addedProductsCollection.updateOne(
+            filter,
+            updatedDoc
+          );
+          res.send(result);
+        } else {
+          const result = await addedProductsCollection.insertOne(product);
+          res.send(result);
+        }
+      } catch (error) {
+        res.send(error.message);
       }
     });
 
@@ -254,10 +302,14 @@ async function run() {
 
     // delete the cart product
     app.delete('/cart-products/:id', verifyJwt, async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: id };
-      const result = await addedProductsCollection.deleteOne(query);
-      res.send(result);
+      try {
+        const id = req.params.id;
+        const query = { _id: id };
+        const result = await addedProductsCollection.deleteOne(query);
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
     });
 
     // delete many products form cart
