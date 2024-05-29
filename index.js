@@ -124,7 +124,7 @@ async function run() {
         const result = await userCollection.find().toArray();
         return res.send(result);
       } catch (error) {
-        res.send(error.message);
+        console.log(error.message);
       }
     });
 
@@ -165,17 +165,53 @@ async function run() {
     });
 
     // make admin by email
-    app.patch('/make-admin/:email', async (req, res) => {
+    app.patch('/change-role/:email', async (req, res) => {
       try {
         const email = req.params.email;
+        const { role } = req.body;
         const query = { email };
         const makeAdmin = {
           $set: {
-            isAdmin: true,
+            role,
           },
         };
 
         const result = await userCollection.updateOne(query, makeAdmin);
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
+    app.get('/admin/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { email };
+        const user = await userCollection.findOne(query);
+        const result = { isAdmin: user?.role === 'admin' };
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
+    app.get('/seller/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { email };
+        const user = await userCollection.findOne(query);
+        const result = { isSeller: user?.role === 'seller' };
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
+    app.delete('/delete-user/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { email };
+        const result = await userCollection.deleteOne(query);
         res.send(result);
       } catch (error) {
         console.log(error.message);
