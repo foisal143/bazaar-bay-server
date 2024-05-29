@@ -164,6 +164,24 @@ async function run() {
       }
     });
 
+    // make admin by email
+    app.patch('/make-admin/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { email };
+        const makeAdmin = {
+          $set: {
+            isAdmin: true,
+          },
+        };
+
+        const result = await userCollection.updateOne(query, makeAdmin);
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
     // search the all products api
     app.get('/search-products/:searchValue', async (req, res) => {
       try {
