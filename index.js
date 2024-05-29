@@ -73,6 +73,12 @@ async function run() {
     const selectedProductCollection = client
       .db('bazaar-bay')
       .collection('selectedProd');
+
+    // buy products collection
+    const ordersProductCollection = client
+      .db('bazaar-bay')
+      .collection('buy-products');
+
     // all user related api here
     app.put('/users/:email', async (req, res) => {
       try {
@@ -91,7 +97,7 @@ async function run() {
             updatedDoc,
             option
           );
-          res.send(result);
+          return res.send(result);
         }
       } catch (error) {
         res.send('failed to fetch');
@@ -104,7 +110,7 @@ async function run() {
         if (email) {
           const query = { email: email };
           const result = await userCollection.findOne(query);
-          res.send(result);
+          return res.send(result);
         } else {
           res.send({});
         }
@@ -113,10 +119,10 @@ async function run() {
       }
     });
 
-    app.get('/users', verifyJwt, async (req, res) => {
+    app.get('/users', async (req, res) => {
       try {
         const result = await userCollection.find().toArray();
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send(error.message);
       }
@@ -134,7 +140,7 @@ async function run() {
         };
 
         const result = await userCollection.updateOne(filter, updatedDoc);
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send(error.message);
       }
@@ -152,7 +158,7 @@ async function run() {
         };
 
         const result = await userCollection.updateOne(filter, updatedDoc);
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send(error.message);
       }
@@ -162,16 +168,15 @@ async function run() {
     app.get('/search-products/:searchValue', async (req, res) => {
       try {
         const searchValue = req.params.searchValue;
-        const regexSearch = new RegExp(searchValue);
-        console.log(regexSearch);
+
         const query = {
           $or: [
-            { name: { $regex: regexSearch } },
-            { category: { $regex: regexSearch } },
+            { name: { $regex: searchValue, $options: 'i' } },
+            { category: { $regex: searchValue, $options: 'i' } },
           ],
         };
         const result = await produtctCollection.find(query).toArray();
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send(error.message);
       }
@@ -181,7 +186,7 @@ async function run() {
     app.get('/products', async (req, res) => {
       try {
         const result = await produtctCollection.find().toArray();
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send(error.message);
       }
@@ -194,9 +199,9 @@ async function run() {
         if (id) {
           const query = { _id: new ObjectId(id) };
           const result = await produtctCollection.findOne(query);
-          res.send(result);
+          return res.send(result);
         } else {
-          res.send({});
+          return res.send({});
         }
       } catch (error) {
         res.send(error.message);
@@ -221,7 +226,7 @@ async function run() {
           updatedDoc,
           option
         );
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send('update unsuccessfull');
       }
@@ -232,7 +237,7 @@ async function run() {
       try {
         const product = req.body;
         const result = await wishlistProductCollection.insertOne(product);
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send(error.message);
       }
@@ -243,7 +248,7 @@ async function run() {
         const email = req.params.email;
         const query = { email: email };
         const result = await wishlistProductCollection.find(query).toArray();
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send('no data found');
       }
@@ -254,7 +259,7 @@ async function run() {
         const id = req.params.id;
         const query = { _id: id };
         const result = await wishlistProductCollection.deleteOne(query);
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send(error.message);
       }
@@ -278,7 +283,7 @@ async function run() {
             filter,
             updatedDoc
           );
-          res.send(result);
+          return res.send(result);
         } else {
           const result = await addedProductsCollection.insertOne(product);
           res.send(result);
@@ -290,27 +295,35 @@ async function run() {
 
     app.get('/cart-products/:email', verifyJwt, async (req, res) => {
       const email = req.params.email;
-      const query = { email: email };
-      const result = await addedProductsCollection.find(query).toArray();
-      res.send(result);
+      try {
+        if (email) {
+          const query = { email: email };
+          const result = await addedProductsCollection.find(query).toArray();
+          return res.send(result);
+        }
+      } catch (error) {
+        console.log(error.message);
+      }
     });
 
     // update the quantity of added product
     app.patch('/cart-products/:id', verifyJwt, async (req, res) => {
       try {
         const id = req.params.id;
-        const query = { _id: id };
-        const { quantity } = req.body;
-        const updatedDoc = {
-          $set: {
-            quantity: quantity,
-          },
-        };
-        const result = await addedProductsCollection.updateOne(
-          query,
-          updatedDoc
-        );
-        res.send(result);
+        if (id) {
+          const query = { _id: id };
+          const { quantity } = req.body;
+          const updatedDoc = {
+            $set: {
+              quantity: quantity,
+            },
+          };
+          const result = await addedProductsCollection.updateOne(
+            query,
+            updatedDoc
+          );
+          return res.send(result);
+        }
       } catch (error) {
         console.log(error.message);
       }
@@ -322,7 +335,7 @@ async function run() {
         const id = req.params.id;
         const query = { _id: id };
         const result = await addedProductsCollection.deleteOne(query);
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         res.send(error.message);
       }
@@ -333,13 +346,13 @@ async function run() {
       try {
         const idsString = req.query.ids;
         const ids = idsString.split(',');
-        console.log(ids);
+
         if (ids?.length > 0) {
           const filter = { _id: { $in: ids.map(id => id) } };
-          console.log(ids);
+
           const result = await addedProductsCollection.deleteMany(filter);
-          console.log(result);
-          res.send(result);
+
+          return res.send(result);
         }
       } catch (error) {
         res.send('faild to fetch');
@@ -349,22 +362,14 @@ async function run() {
     // selected products apis
 
     app.post('/selected-products', async (req, res) => {
+      // todo: exist product not complete
       try {
         const products = req.body;
-        const getDataQuery = { _id: { $in: products.map(prod => prod._id) } };
-        const productsFormDb = await selectedProductCollection
-          .find(getDataQuery)
-          .toArray();
 
-        const exist = products.length === productsFormDb.length;
-        if (exist) {
-          return res.send({ exist: true });
-        } else {
-          const result = await selectedProductCollection.insertMany(products);
-          res.send(result);
-        }
+        const result = await selectedProductCollection.insertMany(products);
+        res.send(result);
       } catch (error) {
-        res.send('faild to load data');
+        console.log(error.message);
       }
     });
 
@@ -374,7 +379,7 @@ async function run() {
         if (email) {
           const query = { email: email };
           const result = await selectedProductCollection.find(query).toArray();
-          res.send(result);
+          return res.send(result);
         }
       } catch (error) {
         res.send('faild to load data');
@@ -386,14 +391,38 @@ async function run() {
     app.delete('/selected-products/:id', async (req, res) => {
       try {
         const idsString = req.params.id;
+        console.log(idsString);
         const ids = idsString.split(',');
         if (ids) {
           const query = { _id: { $in: ids.map(id => id) } };
           const result = await selectedProductCollection.deleteMany(query);
-          res.send(result);
+          return res.send(result);
         }
       } catch (error) {
         res.send('failsd to fetch');
+      }
+    });
+
+    // order the  products apis
+
+    app.post('/buy-products', async (req, res) => {
+      try {
+        const products = req.body;
+        const result = await ordersProductCollection.insertMany(products);
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
+    app.get('/orders/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { email };
+        const result = await ordersProductCollection.find(query).toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
       }
     });
 
@@ -401,7 +430,7 @@ async function run() {
     app.post('/payment-intent', async (req, res) => {
       try {
         const { price } = req.body;
-
+        console.log(price);
         if (price) {
           const amount = parseFloat(price) * 100;
           const paymentIntent = await stripe.paymentIntents.create({
@@ -409,13 +438,13 @@ async function run() {
             currency: 'usd',
             payment_method_types: ['card'],
           });
-          console.log(paymentIntent.client_secret);
-          res.send({
+
+          res.status(200).send({
             clientSecret: paymentIntent.client_secret,
           });
         }
       } catch (error) {
-        res.send('payment faild', error.message);
+        res.status(402).send('payment faild', error.message);
       }
     });
 
