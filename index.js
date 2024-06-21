@@ -480,6 +480,29 @@ async function run() {
       }
     });
 
+    app.get('/orders', async (req, res) => {
+      try {
+        const result = await ordersProductCollection.find().toArray();
+        res.send(result);
+      } catch (error) {
+        console.log(error.message);
+      }
+    });
+
+    app.patch('/orders/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: id };
+      const { status } = req.body;
+      const updatedDoc = {
+        $set: {
+          status: status,
+        },
+      };
+
+      const result = await ordersProductCollection.updateOne(query, updatedDoc);
+      res.send(result);
+    });
+
     // create payment intent for stripe payment
     app.post('/payment-intent', async (req, res) => {
       try {
