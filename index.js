@@ -183,24 +183,25 @@ async function run() {
       }
     });
 
-    app.get('/admin/:email', async (req, res) => {
+    app.get('/is-seller/:email', async (req, res) => {
       try {
         const email = req.params.email;
         const query = { email };
+        console.log(email);
         const user = await userCollection.findOne(query);
-        const result = { isAdmin: user?.role === 'admin' };
+        const result = { isSeller: user?.role === 'seller' };
         res.send(result);
       } catch (error) {
         console.log(error.message);
       }
     });
 
-    app.get('/seller/:email', async (req, res) => {
+    app.get('/admin/:email', async (req, res) => {
       try {
         const email = req.params.email;
         const query = { email };
         const user = await userCollection.findOne(query);
-        const result = { isSeller: user?.role === 'seller' };
+        const result = { isAdmin: user?.role === 'admin' };
         res.send(result);
       } catch (error) {
         console.log(error.message);
@@ -234,6 +235,16 @@ async function run() {
       } catch (error) {
         res.send(error.message);
       }
+    });
+
+    // create a product into db
+
+    app.post('/products', async (req, res) => {
+      try {
+        const productDetails = req.body;
+        const result = await produtctCollection.insertOne(productDetails);
+        return res.send(result);
+      } catch (error) {}
     });
 
     // get the all products
