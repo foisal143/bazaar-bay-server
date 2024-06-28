@@ -257,6 +257,16 @@ async function run() {
       }
     });
 
+    app.get('/get-products-by-email/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const result = await produtctCollection.find({ email }).toArray();
+        return res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
+    });
+
     // get the single product
     app.get('/products/:id', async (req, res) => {
       try {
@@ -268,6 +278,26 @@ async function run() {
         } else {
           return res.send({});
         }
+      } catch (error) {
+        res.send(error.message);
+      }
+    });
+
+    app.patch('/products/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const productData = req.body;
+        console.log(id);
+        console.log(productData);
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            ...productData,
+          },
+        };
+
+        const result = await produtctCollection.updateOne(filter, updatedDoc);
+        return res.send(result);
       } catch (error) {
         res.send(error.message);
       }
