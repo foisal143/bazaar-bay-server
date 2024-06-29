@@ -521,6 +521,17 @@ async function run() {
       }
     });
 
+    app.get('/get-orders-for-seller/:email', async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { seller: email };
+        const result = await ordersProductCollection.find(query).toArray();
+        return res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
+    });
+
     app.get('/orders', async (req, res) => {
       try {
         const result = await ordersProductCollection.find().toArray();
