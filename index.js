@@ -321,12 +321,43 @@ async function run() {
       try {
         const id = req.params.id;
         const productData = req.body;
-        console.log(id);
-        console.log(productData);
+
         const filter = { _id: new ObjectId(id) };
         const updatedDoc = {
           $set: {
             ...productData,
+          },
+        };
+
+        const result = await produtctCollection.updateOne(filter, updatedDoc);
+        return res.send(result);
+      } catch (error) {
+        return res.send(error.message);
+      }
+    });
+
+    app.patch('/add-reveiw-in-product/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const reveiwData = req.body;
+
+        const product = await produtctCollection.findOne({
+          _id: new ObjectId(id),
+        });
+
+        // calculate the avrg of rating
+        const productRatingsAvg =
+          product &&
+          product.reviews.reduce((accumulator, currentReview) => {
+            return accumulator + parseFloat(currentReview?.rating);
+          }, 0) / (product?.reviews?.length || 1);
+
+        const avgRating = parseFloat(productRatingsAvg.toFixed(2));
+        const filter = { _id: new ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            reviews: reveiwData,
+            rating: avgRating,
           },
         };
 
