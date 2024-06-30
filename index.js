@@ -164,6 +164,40 @@ async function run() {
       }
     });
 
+    app.patch('/follow-status/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const { followers } = req.body;
+        const updateDoc = {
+          $set: {
+            followers: followers,
+          },
+        };
+        const result = await userCollection.updateOne(filter, updateDoc);
+        return res.send(result);
+      } catch (error) {
+        return res.send(error.message);
+      }
+    });
+
+    app.patch('/followed-store-status/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const { followedStores } = req.body;
+        const updateDoc = {
+          $set: {
+            followedStores: followedStores,
+          },
+        };
+        const result = await userCollection.updateOne(filter, updateDoc);
+        return res.send(result);
+      } catch (error) {
+        return res.send(error.message);
+      }
+    });
+
     // make admin by email
     app.patch('/change-role/:email', async (req, res) => {
       try {
@@ -299,7 +333,7 @@ async function run() {
         const result = await produtctCollection.updateOne(filter, updatedDoc);
         return res.send(result);
       } catch (error) {
-        res.send(error.message);
+        return res.send(error.message);
       }
     });
 
@@ -441,7 +475,7 @@ async function run() {
       try {
         const idsString = req.query.ids;
         const ids = idsString.split(',');
-
+        console.log(ids);
         if (ids?.length > 0) {
           const filter = { _id: { $in: ids.map(id => id) } };
 
@@ -462,7 +496,7 @@ async function run() {
         const products = req.body;
 
         const result = await selectedProductCollection.insertMany(products);
-        res.send(result);
+        return res.send(result);
       } catch (error) {
         console.log(error.message);
       }
@@ -543,7 +577,7 @@ async function run() {
 
     app.patch('/orders/:id', async (req, res) => {
       const id = req.params.id;
-      const query = { _id: id };
+      const query = { _id: new ObjectId(id) };
       const { status } = req.body;
       const updatedDoc = {
         $set: {
@@ -591,6 +625,13 @@ run().catch(console.dir);
 
 app.get('/', (req, res) => {
   res.send('bazaar bay data is comming');
+});
+
+app.use((error, req, res, next) => {
+  res.send({
+    success: false,
+    message: error.message,
+  });
 });
 
 app.listen(port, () => {
