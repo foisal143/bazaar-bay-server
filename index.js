@@ -33,7 +33,7 @@ const verifyJwt = (req, res, next) => {
 
 app.post('/jwt', (req, res) => {
   const emailObj = req.body;
-  const token = jwt.sign(emailObj, process.env.JWT_TOKEN, { expiresIn: '1h' });
+  const token = jwt.sign(emailObj, process.env.JWT_TOKEN, { expiresIn: '12h' });
   res.send({ token });
 });
 
@@ -119,12 +119,24 @@ async function run() {
       }
     });
 
-    app.get('/users', async (req, res) => {
+    app.get('/users', verifyJwt, async (req, res) => {
       try {
         const result = await userCollection.find().toArray();
         return res.send(result);
       } catch (error) {
         console.log(error.message);
+      }
+    });
+
+    app.get('/get-followed-seller/:emails', verifyJwt, async (req, res) => {
+      try {
+        const emailsString = req.params.emails;
+        const emailsArray = emailsString.split(',');
+        const query = { email: { $in: emailsArray.map(email => email) } };
+        const result = await userCollection.find(query).toArray();
+        return res.send(result);
+      } catch (error) {
+        return res.send(error.message);
       }
     });
 
@@ -164,7 +176,7 @@ async function run() {
       }
     });
 
-    app.patch('/follow-status/:id', async (req, res) => {
+    app.patch('/follow-status/:id', verifyJwt, async (req, res) => {
       try {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
@@ -181,7 +193,7 @@ async function run() {
       }
     });
 
-    app.patch('/followed-store-status/:id', async (req, res) => {
+    app.patch('/followed-store-status/:id', verifyJwt, async (req, res) => {
       try {
         const id = req.params.id;
         const filter = { _id: new ObjectId(id) };
@@ -199,7 +211,7 @@ async function run() {
     });
 
     // make admin by email
-    app.patch('/change-role/:email', async (req, res) => {
+    app.patch('/change-role/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
         const { role } = req.body;
@@ -217,11 +229,11 @@ async function run() {
       }
     });
 
-    app.get('/is-seller/:email', async (req, res) => {
+    app.get('/is-seller/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
         const query = { email };
-        console.log(email);
+
         const user = await userCollection.findOne(query);
         const result = { isSeller: user?.role === 'seller' };
         res.send(result);
@@ -230,7 +242,7 @@ async function run() {
       }
     });
 
-    app.get('/admin/:email', async (req, res) => {
+    app.get('/admin/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
         const query = { email };
@@ -242,7 +254,7 @@ async function run() {
       }
     });
 
-    app.delete('/delete-user/:email', async (req, res) => {
+    app.delete('/delete-user/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
         const query = { email };
@@ -291,7 +303,18 @@ async function run() {
       }
     });
 
-    app.get('/get-products-by-email/:email', async (req, res) => {
+    app.get('/approved-products', async (req, res) => {
+      try {
+        const result = await produtctCollection
+          .find({ status: 'approved' })
+          .toArray();
+        res.send(result);
+      } catch (error) {
+        res.send(error.message);
+      }
+    });
+
+    app.get('/get-products-by-email/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
         const result = await produtctCollection.find({ email }).toArray();
@@ -317,7 +340,7 @@ async function run() {
       }
     });
 
-    app.patch('/products/:id', async (req, res) => {
+    app.patch('/products/:id', verifyJwt, async (req, res) => {
       try {
         const id = req.params.id;
         const productData = req.body;
@@ -336,7 +359,7 @@ async function run() {
       }
     });
 
-    app.patch('/add-reveiw-in-product/:id', async (req, res) => {
+    app.patch('/add-reveiw-in-product/:id', verifyJwt, async (req, res) => {
       try {
         const id = req.params.id;
         const reveiwData = req.body;
@@ -365,6 +388,24 @@ async function run() {
         return res.send(result);
       } catch (error) {
         return res.send(error.message);
+      }
+    });
+
+    // update the product status api
+    app.patch('/update-product-status/:id', async (req, res) => {
+      try {
+        const id = req.params.id;
+        const filter = { _id: new ObjectId(id) };
+        const { status } = req.body;
+        const updatedDoc = {
+          $set: {
+            status,
+          },
+        };
+        const result = await produtctCollection.updateOne(filter, updatedDoc);
+        return res.send(result);
+      } catch (error) {
+        res.send(error.message);
       }
     });
 
@@ -430,7 +471,7 @@ async function run() {
       try {
         const product = req.body;
 
-        const filter = { name: product.name };
+        const filter = { name: product.name, email: product?.email };
         const exist = await addedProductsCollection.findOne(filter);
         const quantity = exist?.quantity;
         if (exist) {
@@ -467,11 +508,11 @@ async function run() {
     });
 
     // update the quantity of added product
-    app.patch('/cart-products/:id', verifyJwt, async (req, res) => {
+    app.patch('/cart-products/:id', async (req, res) => {
       try {
         const id = req.params.id;
         if (id) {
-          const query = { _id: id };
+          const query = { _id: new ObjectId(id) };
           const { quantity } = req.body;
           const updatedDoc = {
             $set: {
@@ -493,7 +534,8 @@ async function run() {
     app.delete('/cart-products/:id', verifyJwt, async (req, res) => {
       try {
         const id = req.params.id;
-        const query = { _id: id };
+
+        const query = { _id: new ObjectId(id) };
         const result = await addedProductsCollection.deleteOne(query);
         return res.send(result);
       } catch (error) {
@@ -508,7 +550,7 @@ async function run() {
         const ids = idsString.split(',');
         console.log(ids);
         if (ids?.length > 0) {
-          const filter = { _id: { $in: ids.map(id => id) } };
+          const filter = { productId: { $in: ids.map(id => id) } };
 
           const result = await addedProductsCollection.deleteMany(filter);
 
@@ -521,7 +563,7 @@ async function run() {
 
     // selected products apis
 
-    app.post('/selected-products', async (req, res) => {
+    app.post('/selected-products', verifyJwt, async (req, res) => {
       // todo: exist product not complete
       try {
         const products = req.body;
@@ -533,7 +575,7 @@ async function run() {
       }
     });
 
-    app.get('/selected-products/:email', async (req, res) => {
+    app.get('/selected-products/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
         if (email) {
@@ -548,13 +590,13 @@ async function run() {
 
     // delete the selected data
 
-    app.delete('/selected-products/:id', async (req, res) => {
+    app.delete('/selected-products/:id', verifyJwt, async (req, res) => {
       try {
         const idsString = req.params.id;
-        console.log(idsString);
         const ids = idsString.split(',');
+        console.log('from seleceted products', ids);
         if (ids) {
-          const query = { _id: { $in: ids.map(id => id) } };
+          const query = { productId: { $in: ids.map(id => id) } };
           const result = await selectedProductCollection.deleteMany(query);
           return res.send(result);
         }
@@ -565,7 +607,7 @@ async function run() {
 
     // order the  products apis
 
-    app.post('/buy-products', async (req, res) => {
+    app.post('/buy-products', verifyJwt, async (req, res) => {
       try {
         const products = req.body;
         const result = await ordersProductCollection.insertMany(products);
@@ -575,7 +617,7 @@ async function run() {
       }
     });
 
-    app.get('/orders/:email', async (req, res) => {
+    app.get('/orders/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
         const query = { email };
@@ -586,7 +628,7 @@ async function run() {
       }
     });
 
-    app.get('/get-orders-for-seller/:email', async (req, res) => {
+    app.get('/get-orders-for-seller/:email', verifyJwt, async (req, res) => {
       try {
         const email = req.params.email;
         const query = { seller: email };
@@ -597,7 +639,7 @@ async function run() {
       }
     });
 
-    app.get('/orders', async (req, res) => {
+    app.get('/orders', verifyJwt, async (req, res) => {
       try {
         const result = await ordersProductCollection.find().toArray();
         res.send(result);
@@ -621,7 +663,7 @@ async function run() {
     });
 
     // create payment intent for stripe payment
-    app.post('/payment-intent', async (req, res) => {
+    app.post('/payment-intent', verifyJwt, async (req, res) => {
       try {
         const { price } = req.body;
         console.log(price);
